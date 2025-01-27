@@ -20,6 +20,46 @@ export class BlocklyComponent implements OnInit {
   }
 
   private defineCustomBlocks() {
+    // First define the mutator blocks
+    Blockly.Blocks['if_then_container'] = {
+      init: function() {
+        this.appendDummyInput()
+            .appendField('if');
+        this.appendStatementInput('STACK');
+        this.setColour(210);
+        this.contextMenu = false;
+      }
+    };
+
+    Blockly.Blocks['if_then_elseif'] = {
+      init: function() {
+        this.appendDummyInput()
+            .appendField('else if');
+        this.setPreviousStatement(true);
+        this.setNextStatement(true);
+        this.setColour(210);
+        this.contextMenu = false;
+      }
+    };
+
+    // Then define the main if_then block
+    Blockly.Blocks['if_then'] = {
+      init: function() {
+        this.appendValueInput('IF0')
+            .setCheck('Boolean')
+            .appendField('if');
+        this.appendStatementInput('DO0')
+            .appendField('then');
+        this.setPreviousStatement(true);
+        this.setNextStatement(true);
+        this.setColour(210);
+        // Use built-in controls_if mutator
+        this.jsonInit({
+          'mutator': 'controls_if_mutator'
+        });
+      }
+    };
+
     // Register block types
     Blockly.common.defineBlocksWithJsonArray([
       {
@@ -73,25 +113,6 @@ export class BlocklyComponent implements OnInit {
         tooltip: 'Wait for specified seconds'
       },
       {
-        type: 'if_then',
-        message0: 'If %1 then %2',
-        args0: [
-          {
-            type: 'input_value',
-            name: 'CONDITION',
-            check: 'Boolean'
-          },
-          {
-            type: 'input_statement',
-            name: 'DO'
-          }
-        ],
-        previousStatement: null,
-        nextStatement: null,
-        colour: 210,
-        tooltip: 'Execute code if condition is true'
-      },
-      {
         type: 'repeat_times',
         message0: 'Repeat %1 times %2',
         args0: [
@@ -129,17 +150,14 @@ export class BlocklyComponent implements OnInit {
       return `await this.wait(${seconds});\n`;
     };
 
-    javascriptGenerator.forBlock['if_then'] = (block) => {
-      const condition = javascriptGenerator.valueToCode(block, 'CONDITION', Order.ATOMIC) || 'false';
-      const code = javascriptGenerator.statementToCode(block, 'DO') || '';
-      return `if (${condition}) {\n${code}}\n`;
-    };
-
     javascriptGenerator.forBlock['repeat_times'] = (block) => {
       const times = javascriptGenerator.valueToCode(block, 'TIMES', Order.ATOMIC) || '0';
       const code = javascriptGenerator.statementToCode(block, 'DO') || '';
       return `for(let count = 0; count < ${times}; count++) {\n${code}}\n`;
     };
+
+    // Use the same generator as controls_if
+    javascriptGenerator.forBlock['if_then'] = javascriptGenerator.forBlock['controls_if'];
   }
 
   private initWorkspace() {
